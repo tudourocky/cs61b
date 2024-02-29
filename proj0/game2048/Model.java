@@ -94,6 +94,31 @@ public class Model extends Observable {
         setChanged();
     }
 
+    public void process_column(int col_index) {
+        int i = board.size()-1;
+        boolean first = true;
+        while(i >= 0) {
+            if (tile(col_index, i) != null && first == true) {
+                board.move(col_index, board.size()-1, tile(col_index, i));
+                first = false;
+            }else if(tile(col_index, i) != null) {
+                if(tile(col_index, i).value() == tile(col_index, board.size()-1).value()) {
+                    board.move(col_index, board.size()-1, tile(col_index, i));
+                }else{
+                    int j = i;
+                    while(tile(col_index, j) != null && j < board.size()) {
+                        j++;
+                    }
+                    if(j != i) {
+                        board.move(col_index, j, tile(col_index, i));
+                    }
+                }
+                first = false;
+            }
+            i--;
+        }
+    }
+
     /** Tilt the board toward SIDE. Return true iff this changes the board.
      *
      * 1. If two Tile objects are adjacent in the direction of motion and have
@@ -107,18 +132,25 @@ public class Model extends Observable {
      *    and the trailing tile does not.
      * */
     public boolean tilt(Side side) {
-        boolean changed;
-        changed = false;
+        boolean has_changed = false;
 
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
+        // up only
+        if(side == Side.NORTH) {
+            for(int i = 0; i < board.size(); i++) {
+                process_column(i);
+                has_changed = true;
+            }
+        }
+
         checkGameOver();
-        if (changed) {
+        if (has_changed) {
             setChanged();
         }
-        return changed;
+        return has_changed;
     }
 
     /** Checks if the game is over and sets the gameOver variable

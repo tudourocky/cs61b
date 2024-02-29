@@ -94,31 +94,6 @@ public class Model extends Observable {
         setChanged();
     }
 
-    public void process_column(int col_index) {
-        int i = board.size()-1;
-        boolean first = true;
-        while(i >= 0) {
-            if (tile(col_index, i) != null && first == true) {
-                board.move(col_index, board.size()-1, tile(col_index, i));
-                first = false;
-            }else if(tile(col_index, i) != null) {
-                if(tile(col_index, i).value() == tile(col_index, board.size()-1).value()) {
-                    board.move(col_index, board.size()-1, tile(col_index, i));
-                }else{
-                    int j = i;
-                    while(tile(col_index, j) != null && j < board.size()) {
-                        j++;
-                    }
-                    if(j != i) {
-                        board.move(col_index, j, tile(col_index, i));
-                    }
-                }
-                first = false;
-            }
-            i--;
-        }
-    }
-
     /** Tilt the board toward SIDE. Return true iff this changes the board.
      *
      * 1. If two Tile objects are adjacent in the direction of motion and have
@@ -132,25 +107,63 @@ public class Model extends Observable {
      *    and the trailing tile does not.
      * */
     public boolean tilt(Side side) {
-        boolean has_changed = false;
+        boolean changed = false;
 
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
-        // up only
-        if(side == Side.NORTH) {
-            for(int i = 0; i < board.size(); i++) {
-                process_column(i);
-                has_changed = true;
+
+        board.setViewingPerspective(side);
+
+        for (int col = 0; col < board.size(); col += 1) {
+            for (int row = board.size() - 1; row >= 0; row -= 1) {
+                Tile t1 = board.tile(col, row);
+                if (t1 != null) {
+                    for (int row2 = row - 1; row2 >= 0; row2 -= 1) {
+                        Tile t2 = board.tile(col, row2);
+                        if (t2 != null) {
+                            if (t1.value() == t2.value()) {
+                                board.move(col, row, t2);
+                                changed = true;
+                                score += 2 * t1.value();
+                                row = row2;
+                                break;
+                            } else {
+                                break;
+                            }
+                        } else {
+                            continue;
+                        }
+                    }
+                }
+
             }
         }
 
+        for (int col = 0; col < board.size(); col += 1) {
+            for (int row = board.size() - 1; row >= 0; row -= 1) {
+                Tile t1 = board.tile(col, row);
+                if (t1 == null) {
+                    for (int row2 = row - 1; row2 >= 0; row2 -= 1) {
+                        Tile t2 = board.tile(col, row2);
+                        if (t2 != null) {
+                            board.move(col, row, t2);
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        board.setViewingPerspective(Side.NORTH);
+
         checkGameOver();
-        if (has_changed) {
+        if (changed) {
             setChanged();
         }
-        return has_changed;
+        return changed;
     }
 
     /** Checks if the game is over and sets the gameOver variable
